@@ -16,6 +16,8 @@ export default function MangaExtractor() {
   const [isLoading, setIsLoading] = useState(false)
   const [showRangeInput, setShowRangeInput] = useState(false)
 
+  //TODO: This has to do the local check to see if we have data from the manga based on the title inputed. It uses the
+  // manga_title variable to be inputted in the get_manga_data_path function, to do this check locally in the computer.
   const checkLocalData = async (mangaTitle: string) => {
     setIsLoading(true)
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -24,6 +26,11 @@ export default function MangaExtractor() {
     return hasLocalData
   }
 
+  //TODO: if there is no data found on the local computer, this function will be called to scrape the website for the
+  // manga title inputed. It will use the websiteUrl variable to scrape the website for the manga chapters and the
+  // LLM API will grab the links of all the chapters of the manga.
+  // It is using the function called scrape_manga_data.
+  // This should be being passed to the Python script in the variable of manga_url.
   const scrapeWebsite = async (websiteUrl: string) => {
     setIsLoading(true)
     setStatus('Scraping website for chapters...')
@@ -32,6 +39,10 @@ export default function MangaExtractor() {
     setStatus('Website scraped successfully!')
   }
 
+  //TODO: this should be passed to the python script on the manga_title variable.
+  // After collecting this, it should run the get_manga_data_path to check the local deskptop
+  // See if there's some local json file with the matching name, and depending on that it will ask the user to
+  // enter the url first to scrape the website or to enter the chapter range.
   const handleTitleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title) {
@@ -48,6 +59,12 @@ export default function MangaExtractor() {
     }
   }
 
+  //TODO: this should be passed to the python script on the manga_url variable.
+  // After collecting this, it should run the scrape_manga_data to run the first scraping function and collect all the chapters.
+  // After this, the script should convert the chapters into a dictionary, and then run another scraping of each chapter link.
+  // After this, all the images for each chapter will be collected in a JSON with the structure of the chapter number and the page number,
+  // indicating what page number is each, in ascending number.
+  // enter the url first to scrape the website or to enter the chapter range.
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!url) {
@@ -58,6 +75,11 @@ export default function MangaExtractor() {
     setShowRangeInput(true)
   }
 
+  //TODO: After storing the database of all the links, you will have stored locally the file of all the links.
+  // Now, the user needs to input the range of chapters that he wants to download.
+  // This will be passed to the python script on the download_start and download_end variables.
+  // After this, the script will run the download_images function and the create_pdf_from_images function.
+  // Lastly, it will delete the images from the computer after the PDF is created.
   const handleRangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!startChapter || !endChapter) {
