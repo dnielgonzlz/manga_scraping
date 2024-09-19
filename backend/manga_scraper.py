@@ -11,12 +11,18 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.pagesizes import letter
 from concurrent.futures import ThreadPoolExecutor, as_completed
-# Import the API key
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the API key from environment variables
+api_key = os.getenv("API_KEY")
 
 # Define the configuration for the scraping pipeline
 graph_config = {
     "llm": {
-        "api_key": "OPENAI_API_KEY",
+        "api_key": api_key,
         "model": "openai/gpt-4o-mini",
     },
     "verbose": True,
@@ -239,6 +245,3 @@ def main():
     
     # Delete the entire Downloaded Images folder
     delete_downloaded_images_folder()    
-
-if __name__ == "__main__":
-    main()
