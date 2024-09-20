@@ -12,6 +12,8 @@ from reportlab.lib.utils import ImageReader
 from reportlab.lib.pagesizes import letter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
+import asyncio
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,6 +51,7 @@ def scrape_manga_data(manga_title, manga_url):
     result = smart_scraper_graph.run()
     return result.get('chapters', [])
 
+
 def collect_image_links(chapters):
     manga_data = {"chapters": []}
     for chapter in chapters:
@@ -71,6 +74,7 @@ def collect_image_links(chapters):
                 "pages": pages
             })
     return manga_data
+
 
 def download_image(chapter_num, page, url, download_folder):
     try:

@@ -15,7 +15,6 @@ export default function MangaExtractor() {
   const [endChapter, setEndChapter] = useState('')
   const [status, setStatus] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showUrlInput, setShowUrlInput] = useState(false)
   const [showRangeInput, setShowRangeInput] = useState(false)
 
   //TODO: This has to do the local check to see if we have data from the manga based on the title inputed. It uses the
@@ -25,7 +24,7 @@ export default function MangaExtractor() {
     try {
       const response = await axios.post('http://localhost:8000/check_local_data', { title: mangaTitle })
       setIsLoading(false)
-      return response.data.hasLocalData
+      return response.data.exists
     } catch (error) {
       console.error('Error checking local data:', error)
       setIsLoading(false)
@@ -46,7 +45,6 @@ export default function MangaExtractor() {
       setIsLoading(false)
       setStatus(`Website scraped successfully! Found ${response.data.chapters.length} chapters.`)
       setShowRangeInput(true)
-      setShowUrlInput(false)
     } catch (error) {
       console.error('Error scraping website:', error)
       setIsLoading(false)
@@ -68,11 +66,9 @@ export default function MangaExtractor() {
     if (hasLocalData) {
       setStatus('Local data found. Please enter chapter range.')
       setShowRangeInput(true)
-      setShowUrlInput(false)
     } else {
       setStatus('No local data found. Please enter website URL.')
       setShowRangeInput(false)
-      setShowUrlInput(true)
     }
   }
 

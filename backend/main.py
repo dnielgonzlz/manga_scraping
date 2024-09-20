@@ -35,16 +35,23 @@ async def check_local_data(manga: MangaTitle):
     return {"exists": exists}
 
 @app.post("/scrape_manga")
-async def scrape_manga(manga: MangaURL):
+def scrape_manga(manga: MangaURL):
     try:
+        print(f"Attempting to scrape manga: {manga.title} from URL: {manga.url}")
         chapters = manga_scraper.scrape_manga_data(manga.title, manga.url)
+        print(f"Chapters scraped: {len(chapters)}")
         manga_data = manga_scraper.collect_image_links(chapters)
+        print(f"Image links collected for {len(manga_data['chapters'])} chapters")
         manga_data["manga-title"] = manga.title
         data_path = manga_scraper.get_manga_data_path(manga.title)
         with open(data_path, 'w') as f:
             json.dump(manga_data, f, indent=4)
+        print(f"Manga data saved to {data_path}")
         return {"success": True, "message": "Manga data scraped and saved successfully"}
     except Exception as e:
+        print(f"Error in scrape_manga: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate_pdf")
