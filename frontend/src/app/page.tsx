@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import axios from 'axios'
+import { Progress } from '@radix-ui/react-progress'
 
 export default function MangaExtractor() {
   const [title, setTitle] = useState('')
@@ -16,9 +17,22 @@ export default function MangaExtractor() {
   const [status, setStatus] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showRangeInput, setShowRangeInput] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [totalChapters, setTotalChapters] = useState(0)
+  const [scrapedChapters, setScrapedChapters] = useState(0)
 
-  //TODO: This has to do the local check to see if we have data from the manga based on the title inputed. It uses the
-  // manga_title variable to be inputted in the get_manga_data_path function, to do this check locally in the computer.
+  useEffect(() => {
+    const eventSource = new EventSource('http://localhost:8000/scrape-progress')
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      setProgress(data.progress)
+      setScrapedChapters(data.scraped_chapters)
+      setTotalChapters(data.total_chapters)
+    }
+    return () => eventSource.close()
+  }, [])
+
+
   const checkLocalData = async (mangaTitle: string) => {
     setIsLoading(true)
     try {
@@ -32,18 +46,14 @@ export default function MangaExtractor() {
     }
   }
 
-  //TODO: if there is no data found on the local computer, this function will be called to scrape the website for the
-  // manga title inputed. It will use the websiteUrl variable to scrape the website for the manga chapters and the
-  // LLM API will grab the links of all the chapters of the manga.
-  // It is using the function called scrape_manga_data.
-  // This should be being passed to the Python script in the variable of manga_url.
   const scrapeWebsite = async (websiteUrl: string) => {
     setIsLoading(true)
     setStatus('Scraping website for chapters...')
     try {
       const response = await axios.post('http://localhost:8000/scrape_manga', { title, url: websiteUrl })
       setIsLoading(false)
-      setStatus(`Website scraped successfully! Found ${response.data.chapters.length} chapters.`)
+      setTotalChapters(response.data.total_chapters)
+      setStatus(`Website scraped successfully! Found ${response.data.total_chapters} chapters. Starting detailed scraping...`)
       setShowRangeInput(true)
     } catch (error) {
       console.error('Error scraping website:', error)
@@ -52,10 +62,6 @@ export default function MangaExtractor() {
     }
   }
 
-  //TODO: this should be passed to the python script on the manga_title variable.
-  // After collecting this, it should run the get_manga_data_path to check the local deskptop
-  // See if there's some local json file with the matching name, and depending on that it will ask the user to
-  // enter the url first to scrape the website or to enter the chapter range.
   const handleTitleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title) {
@@ -72,13 +78,6 @@ export default function MangaExtractor() {
     }
   }
 
-
-  //TODO: this should be passed to the python script on the manga_url variable.
-  // After collecting this, it should run the scrape_manga_data to run the first scraping function and collect all the chapters.
-  // After this, the script should convert the chapters into a dictionary, and then run another scraping of each chapter link.
-  // After this, all the images for each chapter will be collected in a JSON with the structure of the chapter number and the page number,
-  // indicating what page number is each, in ascending number.
-  // enter the url first to scrape the website or to enter the chapter range.
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!websiteUrl) {
@@ -86,14 +85,8 @@ export default function MangaExtractor() {
       return
     }
     await scrapeWebsite(websiteUrl) 
-    //TODO: ERROR!
   }
 
-  //TODO: After storing the database of all the links, you will have stored locally the file of all the links.
-  // Now, the user needs to input the range of chapters that he wants to download.
-  // This will be passed to the python script on the download_start and download_end variables.
-  // After this, the script will run the download_images function and the create_pdf_from_images function.
-  // Lastly, it will delete the images from the computer after the PDF is created.
   const handleRangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!startChapter || !endChapter) {
@@ -109,13 +102,17 @@ export default function MangaExtractor() {
         end: parseInt(endChapter)
       })
       setIsLoading(false)
-      setStatus(`PDF extracted successfully! Saved to: ${response.data.pdf_path}`)
+      setStatus(`PDF extracted successfully! ${response.data.message}
+      
+      We recommend installing Calibre https://calibre-ebook.com/ for e-book management.
+      To reduce file size for smooth Kindle transfer, consider using a PDF compression tool like https://www.ilovepdf.com/compress_pdf.`)
     } catch (error) {
       console.error('Error creating PDF:', error)
       setIsLoading(false)
       setStatus('Error occurred while creating the PDF.')
     }
   }
+
 
 
   return (
@@ -213,8 +210,17 @@ export default function MangaExtractor() {
               {status}
             </div>
           )}
+
+          {totalChapters > 0 && (
+            <div className="mt-4">
+              <p className="text-white mb-2">Scraping Progress: {scrapedChapters}/{totalChapters} chapters</p>
+              <Progress value={(scrapedChapters / totalChapters) * 100} className="w-full" />
+              <p className="text-gray-400 mt-2 text-sm">This process may take an hour or more depending on the number of chapters. Please keep this window open.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
+
 }
