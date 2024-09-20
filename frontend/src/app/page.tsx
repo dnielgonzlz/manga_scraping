@@ -6,24 +6,31 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
+import axios from 'axios'
 
 export default function MangaExtractor() {
   const [title, setTitle] = useState('')
-  const [url, setUrl] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
   const [startChapter, setStartChapter] = useState('')
   const [endChapter, setEndChapter] = useState('')
   const [status, setStatus] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showUrlInput, setShowUrlInput] = useState(false)
   const [showRangeInput, setShowRangeInput] = useState(false)
 
   //TODO: This has to do the local check to see if we have data from the manga based on the title inputed. It uses the
   // manga_title variable to be inputted in the get_manga_data_path function, to do this check locally in the computer.
   const checkLocalData = async (mangaTitle: string) => {
     setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const hasLocalData = Math.random() < 0.5
-    setIsLoading(false)
-    return hasLocalData
+    try {
+      const response = await axios.post('http://localhost:8000/check_local_data', { title: mangaTitle })
+      setIsLoading(false)
+      return response.data.hasLocalData
+    } catch (error) {
+      console.error('Error checking local data:', error)
+      setIsLoading(false)
+      return false
+    }
   }
 
   //TODO: if there is no data found on the local computer, this function will be called to scrape the website for the
@@ -34,9 +41,17 @@ export default function MangaExtractor() {
   const scrapeWebsite = async (websiteUrl: string) => {
     setIsLoading(true)
     setStatus('Scraping website for chapters...')
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setIsLoading(false)
-    setStatus('Website scraped successfully!')
+    try {
+      const response = await axios.post('http://localhost:8000/scrape_manga', { title, url: websiteUrl })
+      setIsLoading(false)
+      setStatus(`Website scraped successfully! Found ${response.data.chapters.length} chapters.`)
+      setShowRangeInput(true)
+      setShowUrlInput(false)
+    } catch (error) {
+      console.error('Error scraping website:', error)
+      setIsLoading(false)
+      setStatus('Error occurred while scraping the website.')
+    }
   }
 
   //TODO: this should be passed to the python script on the manga_title variable.
@@ -53,11 +68,14 @@ export default function MangaExtractor() {
     if (hasLocalData) {
       setStatus('Local data found. Please enter chapter range.')
       setShowRangeInput(true)
+      setShowUrlInput(false)
     } else {
       setStatus('No local data found. Please enter website URL.')
       setShowRangeInput(false)
+      setShowUrlInput(true)
     }
   }
+
 
   //TODO: this should be passed to the python script on the manga_url variable.
   // After collecting this, it should run the scrape_manga_data to run the first scraping function and collect all the chapters.
@@ -67,12 +85,12 @@ export default function MangaExtractor() {
   // enter the url first to scrape the website or to enter the chapter range.
   const handleUrlSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!url) {
+    if (!websiteUrl) {
       setStatus('Please enter a website URL.')
       return
     }
-    await scrapeWebsite(url)
-    setShowRangeInput(true)
+    await scrapeWebsite(websiteUrl) 
+    //TODO: ERROR!
   }
 
   //TODO: After storing the database of all the links, you will have stored locally the file of all the links.
@@ -88,10 +106,21 @@ export default function MangaExtractor() {
     }
     setIsLoading(true)
     setStatus('Extracting PDF...')
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    setIsLoading(false)
-    setStatus('PDF extracted successfully!')
+    try {
+      const response = await axios.post('http://localhost:8000/generate_pdf', {
+        title,
+        start: parseInt(startChapter),
+        end: parseInt(endChapter)
+      })
+      setIsLoading(false)
+      setStatus(`PDF extracted successfully! Saved to: ${response.data.pdf_path}`)
+    } catch (error) {
+      console.error('Error creating PDF:', error)
+      setIsLoading(false)
+      setStatus('Error occurred while creating the PDF.')
+    }
   }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black p-4">
@@ -128,8 +157,8 @@ export default function MangaExtractor() {
                 <Label htmlFor="url" className="text-gray-300">Website URL</Label>
                 <Input
                   id="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
                   placeholder="Enter website URL"
                   className="bg-gray-700 text-white border-gray-600 focus:border-purple-500 focus:ring-purple-500"
                 />
