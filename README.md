@@ -1,8 +1,6 @@
 # Manga Scraping Tool
 
-
-Distribute your weekly calories by using a slider to increase or decrease the calories from a day, and it will automatically adjust the other days of the week.
-Features
+Scrape your favorite manga from the website you usually read it to have the links of the images stored in your computer and easily build PDF of compilations of Chapters to easily sent a single PDF file to your Kindle containing multiple chapters.
 
 ## Requirements
 LLM Token API (I tested all the prompts using GPT 4o-mini)
@@ -30,14 +28,40 @@ The file will be created and correctly organized in your Desktop inside the Fold
 
 ## Installation
 
-npm i
+**SET UP API KEY**
+
+*Create a Virtual Environment:*
+
+    python -m venv venv
+
+*Activate the Virtual Environtment:*
+
+    Windows:
+      venv\Scripts\activate
+
+    macOS and Linux:
+      source venv/bin/activate
+
+**INSTALL DEPENDENCIES**
+
+pip install -r requirements.txt
+
+**OBTAIN API KEY**
+
+Create a .env file in the root directory of the project
+
+    API_KEY=your_api_key_here
+
+Replace your_api_key_here with your actual API key.
 
 **START THE FRONTEND**
+
 cd frontend
 
 npm run dev
 
 **START THE BACKEND IN ANOTHER TERMINAL**
+
 cd backend
 
 uvicorn main:app --reload
